@@ -1,4 +1,4 @@
-class Post:
+class TradePost:
     def __init__(
         self, 
         post_id: int, 
@@ -24,7 +24,7 @@ class Post:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Post":
+    def from_dict(cls, data: dict) -> "TradePost":
         """Reconstructs a Post object from a dictionary."""
         return cls(
             post_id=data["post_id"],
