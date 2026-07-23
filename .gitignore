@@ -1,0 +1,4 @@
+__pycache__/
+tradepost_db.json
+media/uploads/
+.venv
