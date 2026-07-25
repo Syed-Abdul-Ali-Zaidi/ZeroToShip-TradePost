@@ -14,6 +14,7 @@ class OfferResponse(BaseModel):
     offered_item_details: str
     offered_post_id: Optional[int] = None
     turn_holder_id: int
+    status: str
 
     class Config:
         from_attributes = True
