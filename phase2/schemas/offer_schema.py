@@ -6,6 +6,9 @@ class OfferCreate(BaseModel):
     offered_item_details: str
     offered_post_id: Optional[int] = None  # OPTIONAL: Link an existing post if you have one
 
+class OfferUpdate(BaseModel):
+    offered_item_details: str
+
 class OfferResponse(BaseModel):
     offer_id: int
     post_id: int
