@@ -4,7 +4,6 @@ from typing import Optional
 class TradePostCreate(BaseModel):
     title: str
     description: str
-    owner_id: int
     image_url: Optional[str] = None
 
 class TradePostResponse(BaseModel):

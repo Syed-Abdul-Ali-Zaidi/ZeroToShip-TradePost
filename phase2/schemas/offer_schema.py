@@ -3,14 +3,13 @@ from typing import Optional
 
 class OfferCreate(BaseModel):
     post_id: int                           # The item you want
-    proposer_id: int                       # Who is making the offer
     offered_item_details: str
     offered_post_id: Optional[int] = None  # OPTIONAL: Link an existing post if you have one
 
 class OfferResponse(BaseModel):
     offer_id: int
     post_id: int
-    proposer_id: int
+    proposer_id: int                        # Who is making the offer
     offered_item_details: str
     offered_post_id: Optional[int] = None
     turn_holder_id: int
