@@ -36,14 +36,16 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("sub")
+        user_id_str = payload.get("sub")
         
-        if user_id is None:
+        if user_id_str is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication credentials",
             )
-            
+
+        # Cast the user_id back to INT for JSON_DB lookup
+        user_id = int(user_id_str)
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -91,6 +93,6 @@ def login_user(credentials: UserLogin):
             detail="Invalid username or password."
         )
         
-    access_token = create_access_token(data={"sub": user["user_id"]})
+    access_token = create_access_token(data={"sub": str(user["user_id"])})
     
     return {"access_token": access_token, "token_type": "bearer"}
