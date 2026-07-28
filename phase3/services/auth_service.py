@@ -48,23 +48,3 @@ def get_current_user_id(token: str) -> int:
         )
 
     return user_id
-
-
-# # --- 1. JWT CONFIGURATION ---
-# SECRET_KEY = "b7f9a8d4e2c145f6a9c8b7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6"
-# ALGORITHM = "HS256"
-# ACCESS_TOKEN_EXPIRE_MINUTES = 120 
-
-
-
-# # --- 2. CRYPTOGRAPHY & TOKEN GENERATION ---
-# def hash_password(password: str) -> str:
-#     return hashlib.sha256(password.encode()).hexdigest()
-
-# def create_access_token(data: dict) -> str:
-#     to_encode = data.copy()
-#     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-#     to_encode.update({"exp": expire})
-    
-#     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-#     return encoded_jwt
