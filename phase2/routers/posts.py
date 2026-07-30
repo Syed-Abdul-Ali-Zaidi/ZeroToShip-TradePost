@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 from phase2.database.json_store import db
 from phase2.schemas.post_schema import TradePostCreate, TradePostResponse
 from phase2.routers.auth import get_current_user
+from phase3.services.post_service import validate_post_ownership
 
 router = APIRouter(prefix="/posts", tags=["Trade Posts"])
 
@@ -20,9 +21,15 @@ def get_all_posts():
 # 2. All_my_post (Login required)
 # ==========================================
 @router.get("/my-posts", response_model=List[TradePostResponse])
-def get_my_posts(current_user: dict = Depends(get_current_user)):
+def get_my_posts(status: str = None, current_user: dict = Depends(get_current_user)):
     """Fetches only the posts owned by the currently logged-in user."""
-    return db.get_posts_by_user(current_user["user_id"])
+    all_posts = db.get_posts_by_user(current_user["user_id"])
+    
+    # Filter the result according to status
+    if status:
+        return [post for post in all_posts if post.get("status") == status]
+        
+    return all_posts
 
 
 # ==========================================
@@ -53,10 +60,7 @@ def get_single_post(post_id: int):
     """Fetches a specific post by its ID so users can view details before offering."""
     post = db.get_post_by_id(post_id)
     if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Post not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found.")
     return post
 
 
@@ -71,12 +75,11 @@ def edit_post(post_id: int, post_data: TradePostCreate, current_user: dict = Dep
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found.")
         
-    # Security Check: Validate existing ownership
-    if post["owner_id"] != current_user["user_id"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to edit this post."
-        )
+    # Security: Validate ownership
+    validate_post_ownership(
+        current_user_id= current_user["user_id"],
+        post_owner_id= post["owner_id"],
+        message= "Not authorized to edit this post.")
         
     updated_fields = post_data.model_dump(exclude_unset=True)
     
@@ -97,11 +100,10 @@ def delete_post(post_id: int, current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found.")
         
     # Security: Validate ownership
-    if post["owner_id"] != current_user["user_id"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to delete this post."
-        )
+    validate_post_ownership(
+        current_user_id= current_user["user_id"],
+        post_owner_id= post["owner_id"],
+        message= "Not authorized to delete this post.")
         
     db.delete_post(post_id)
     
@@ -119,13 +121,12 @@ def get_post_with_offers(post_id: int, current_user: dict = Depends(get_current_
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found.")
         
-    # Crucial Security Check: Only the post author can view the offers on it
-    if post["owner_id"] != current_user["user_id"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only view offers on your own trade posts."
-        )
-        
+    # Security: Validate ownership; Only the post author can view the offers on it
+    validate_post_ownership(
+        current_user_id= current_user["user_id"],
+        post_owner_id= post["owner_id"],
+        message= "You can only view offers on your own trade posts.")
+    
     associated_offers = db.get_offers_by_post(post_id)
     
     return {
