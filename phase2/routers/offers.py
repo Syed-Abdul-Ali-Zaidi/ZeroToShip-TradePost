@@ -7,12 +7,12 @@ from phase2.routers.auth import get_current_user
 from phase3.services.offer_service import validate_delete_permission, validate_open_status, validate_pending_status, validate_turn_holder
 from phase3.services.post_service import validate_self_offer
 
-router = APIRouter(prefix="/offers", tags=["Offers"])
+router = APIRouter(prefix="/api/offers", tags=["Offers"])
 
 # ==========================================
 # 1. Create Offer
 # ==========================================
-@router.post("/", response_model=OfferResponse)
+@router.post("/create_offer", response_model=OfferResponse)
 def create_offer(offer_data: OfferCreate, current_user: dict = Depends(get_current_user)):
     """Proposes a new trade offer on a post."""
     post = db.get_post_by_id(offer_data.post_id)
@@ -38,7 +38,7 @@ def create_offer(offer_data: OfferCreate, current_user: dict = Depends(get_curre
 # ==========================================
 # 2. Edit / Counter Offer
 # ==========================================
-@router.put("/{offer_id}", response_model=OfferResponse)
+@router.put("/edit_offer/{offer_id}", response_model=OfferResponse)
 def edit_offer(offer_id: int, offer_data: OfferUpdate, current_user: dict = Depends(get_current_user)):
     """Edits an offer details. Only the current turn_holder can do this."""
     offer = db.get_offer_by_id(offer_id)
@@ -111,7 +111,7 @@ def accept_offer(offer_id: int, current_user: dict = Depends(get_current_user)):
 # ==========================================
 # 4. Withdraw / Decline Offer (Delete)
 # ==========================================
-@router.delete("/{offer_id}")
+@router.delete("/delete_offer/{offer_id}")
 def delete_offer(offer_id: int, current_user: dict = Depends(get_current_user)):
     """
     Deletes an offer. 
@@ -139,7 +139,7 @@ def delete_offer(offer_id: int, current_user: dict = Depends(get_current_user)):
 # ==========================================
 # 5. Get your Offers 
 # ==========================================
-@router.get("/my-outbound", response_model=List[OfferResponse])
+@router.get("/my_offers", response_model=List[OfferResponse])
 def get_my_outbound_offers(current_user: dict = Depends(get_current_user)):
     """Fetches all offers the current user has made to other posts."""
     return db.get_offers_by_user(current_user["user_id"])

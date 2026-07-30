@@ -5,7 +5,7 @@ from phase2.database.json_store import db
 from phase2.schemas.user_schema import UserCreate, UserResponse, UserLogin, Token
 from phase3.services.auth_service import get_current_user_id, hash_password, create_access_token
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/api/accounts", tags=["Authentication"])
 security = HTTPBearer(auto_error=False)
 
 # --- GET USER DICT ---

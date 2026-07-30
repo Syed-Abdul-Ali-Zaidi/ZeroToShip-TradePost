@@ -6,7 +6,7 @@ from phase2.schemas.post_schema import TradePostCreate, TradePostResponse
 from phase2.routers.auth import get_current_user
 from phase3.services.post_service import validate_post_ownership
 
-router = APIRouter(prefix="/posts", tags=["Trade Posts"])
+router = APIRouter(prefix="/api/posts", tags=["Trade Posts"])
 
 # ==========================================
 # 1. All_posts (No login required)
@@ -20,7 +20,7 @@ def get_all_posts():
 # ==========================================
 # 2. All_my_post (Login required)
 # ==========================================
-@router.get("/my-posts", response_model=List[TradePostResponse])
+@router.get("/my_posts", response_model=List[TradePostResponse])
 def get_my_posts(status: str = None, current_user: dict = Depends(get_current_user)):
     """Fetches only the posts owned by the currently logged-in user."""
     all_posts = db.get_posts_by_user(current_user["user_id"])
@@ -35,7 +35,7 @@ def get_my_posts(status: str = None, current_user: dict = Depends(get_current_us
 # ==========================================
 # 3. Create_post (Login required)
 # ==========================================
-@router.post("/", response_model=TradePostResponse)
+@router.post("/create_post", response_model=TradePostResponse)
 def create_post(post_data: TradePostCreate, current_user: dict = Depends(get_current_user)):
     """Creates a new trade listing."""
     post_dict = post_data.model_dump()
@@ -67,7 +67,7 @@ def get_single_post(post_id: int):
 # ==========================================
 # 4a. Edit_post (Login required)
 # ==========================================
-@router.put("/{post_id}", response_model=TradePostResponse)
+@router.put("/edit_post/{post_id}", response_model=TradePostResponse)
 def edit_post(post_id: int, post_data: TradePostCreate, current_user: dict = Depends(get_current_user)):
     """Updates an existing post. Only the author can edit it."""
     post = db.get_post_by_id(post_id)
@@ -91,7 +91,7 @@ def edit_post(post_id: int, post_data: TradePostCreate, current_user: dict = Dep
 # ==========================================
 # 4b. Delete_post (Login required)
 # ==========================================
-@router.delete("/{post_id}")
+@router.delete("/delete_post/{post_id}")
 def delete_post(post_id: int, current_user: dict = Depends(get_current_user)):
     """Deletes a post and triggers a CASCADE DELETE on associated offers."""
     post = db.get_post_by_id(post_id)
