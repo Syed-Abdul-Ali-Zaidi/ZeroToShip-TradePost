@@ -4,10 +4,24 @@ from typing import List
 from phase2.database.json_store import db
 from phase2.schemas.offer_schema import OfferCreate, OfferUpdate, OfferResponse
 from phase2.routers.auth import get_current_user
+from phase2.routers.posts import enrich_post
 from phase3.services.offer_service import validate_delete_permission, validate_open_status, validate_pending_status, validate_turn_holder
 from phase3.services.post_service import validate_self_offer
 
 router = APIRouter(prefix="/api/offers", tags=["Offers"])
+
+def enrich_offer(offer: dict) -> dict:
+    """Attaches the post_owner_username & proposer_username to a offer dictionary."""
+    proposer = db.get_user_by_id(offer['proposer_id'])
+
+    post = db.get_post_by_id(offer["post_id"])
+    post_owner = db.get_user_by_id(post["owner_id"])
+
+    offer_copy = offer.copy()
+    offer_copy["proposer_username"] = proposer["username"] if proposer else "Unknown User"
+    offer_copy["post_owner_username"] = post_owner["username"] if post_owner else "Unknown User"
+
+    return offer_copy
 
 # ==========================================
 # 1. Create Offer
@@ -33,7 +47,7 @@ def create_offer(offer_data: OfferCreate, current_user: dict = Depends(get_curre
     
     db.insert_record("offers", offer_dict)
     
-    return offer_dict
+    return enrich_offer(offer_dict)
 
 # ==========================================
 # 2. Edit / Counter Offer
@@ -67,7 +81,8 @@ def edit_offer(offer_id: int, offer_data: OfferUpdate, current_user: dict = Depe
     }
     
     db.update_offer(offer_id, updated_fields)
-    return db.get_offer_by_id(offer_id)
+    updated_offer = db.get_offer_by_id(offer_id)
+    return enrich_offer(updated_offer)
 
 # ==========================================
 # 3. Accept Offer
@@ -139,7 +154,18 @@ def delete_offer(offer_id: int, current_user: dict = Depends(get_current_user)):
 # ==========================================
 # 5. Get your Offers 
 # ==========================================
-@router.get("/my_offers", response_model=List[OfferResponse])
+@router.get("/my_offers")
 def get_my_outbound_offers(current_user: dict = Depends(get_current_user)):
     """Fetches all offers the current user has made to other posts."""
-    return db.get_offers_by_user(current_user["user_id"])
+    offers = db.get_offers_by_user(current_user["user_id"])
+    enriched_offers = list()
+    for offer in offers:
+        offer_copy = offer.copy()
+        enriched_offer = enrich_offer(offer_copy)
+
+        post = db.get_post_by_id(offer["post_id"])
+        enriched_offer["post"] = enrich_post(post) if post else None
+
+        enriched_offers.append(enriched_offer
+                               )
+    return enriched_offers
