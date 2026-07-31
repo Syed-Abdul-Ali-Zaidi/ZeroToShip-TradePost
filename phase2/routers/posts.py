@@ -8,13 +8,22 @@ from phase3.services.post_service import validate_post_ownership
 
 router = APIRouter(prefix="/api/posts", tags=["Trade Posts"])
 
+def enrich_post(post: dict) -> dict:
+    """Attaches the owner_username to a post dictionary."""
+    user = db.get_user_by_id(post["owner_id"])
+    post_copy = post.copy()
+
+    post_copy["owner_username"] = user["username"] if user else "Unknown User"
+    return post_copy
+
 # ==========================================
 # 1. All_posts (No login required)
 # ==========================================
 @router.get("/", response_model=List[TradePostResponse])
 def get_all_posts():
     """Fetches every active trade post on the platform."""
-    return db.get_all_posts()
+    posts = db.get_all_posts()
+    return [enrich_post(post) for post in posts]
 
 
 # ==========================================
@@ -23,13 +32,14 @@ def get_all_posts():
 @router.get("/my_posts", response_model=List[TradePostResponse])
 def get_my_posts(status: str = None, current_user: dict = Depends(get_current_user)):
     """Fetches only the posts owned by the currently logged-in user."""
-    all_posts = db.get_posts_by_user(current_user["user_id"])
+    posts = db.get_posts_by_user(current_user["user_id"])
+    enriched_posts = [enrich_post(post) for post in posts]
     
     # Filter the result according to status
     if status:
-        return [post for post in all_posts if post.get("status") == status]
+        return [post for post in enriched_posts if post.get("status") == status]
         
-    return all_posts
+    return enriched_posts
 
 
 # ==========================================
@@ -49,7 +59,7 @@ def create_post(post_data: TradePostCreate, current_user: dict = Depends(get_cur
     
     db.insert_record("posts", post_dict)
     
-    return post_dict
+    return enrich_post(post_dict)
 
 
 # ==========================================
@@ -61,7 +71,7 @@ def get_single_post(post_id: int):
     post = db.get_post_by_id(post_id)
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found.")
-    return post
+    return enrich_post(post)
 
 
 # ==========================================
@@ -84,8 +94,9 @@ def edit_post(post_id: int, post_data: TradePostCreate, current_user: dict = Dep
     updated_fields = post_data.model_dump(exclude_unset=True)
     
     db.update_post(post_id, updated_fields)
+    updated_post = db.get_post_by_id(post_id)
     
-    return db.get_post_by_id(post_id)
+    return enrich_post(updated_post)
 
 
 # ==========================================
