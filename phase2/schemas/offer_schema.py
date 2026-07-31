@@ -12,7 +12,9 @@ class OfferUpdate(BaseModel):
 class OfferResponse(BaseModel):
     offer_id: int
     post_id: int
+    post_owner_username: str
     proposer_id: int                        # Who is making the offer
+    proposer_username: str
     offered_item_details: str
     offered_post_id: Optional[int] = None
     turn_holder_id: int

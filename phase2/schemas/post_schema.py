@@ -11,6 +11,7 @@ class TradePostResponse(BaseModel):
     title: str
     description: str
     owner_id: int
+    owner_username: str
     image_url: Optional[str] = None
     status: str
 
