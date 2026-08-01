@@ -1,5 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from typing import List, Dict, Any
+import os
+import shutil
+import uuid
 
 from phase2.database.json_store import db
 from phase2.schemas.post_schema import TradePostCreate, TradePostResponse
@@ -59,6 +62,40 @@ def create_post(post_data: TradePostCreate, current_user: dict = Depends(get_cur
     db.insert_record("posts", post_dict)
     
     return enrich_post(post_dict)
+
+@router.post("/upload_image")
+def upload_post_image(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    """
+    Uploads an image file to media/uploads, saves it securely with a 
+    unique UUID filename, and returns the relative URL path.
+    """
+    # 1. Validate that the uploaded file is actually an image
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file type. Only image files are allowed."
+        )
+
+    # 2. Ensure the storage directory exists on the server
+    os.makedirs("media/uploads", exist_ok=True)
+    
+    # 3. Generate a unique filename to prevent filename collision/overwriting
+    file_extension = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+    unique_filename = f"{uuid.uuid4()}.{file_extension}"
+    file_path = f"media/uploads/{unique_filename}"
+    
+    # 4. Save the file stream to disk in chunks to optimize memory usage
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Could not save uploaded file: {str(e)}"
+        )
+        
+    # 5. Return the URL path that will be stored in the database's image_url field
+    return {"image_url": f"/{file_path}"}
 
 
 # ==========================================
