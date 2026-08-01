@@ -5,25 +5,24 @@ from phase2.database.json_store import db
 from phase2.schemas.post_schema import TradePostCreate, TradePostResponse
 from phase2.routers.auth import get_current_user
 from phase3.services.post_service import validate_post_ownership
+from phase3.services.enrichment_service import enrich_post, enrich_offer
 
 router = APIRouter(prefix="/api/posts", tags=["Trade Posts"])
-
-def enrich_post(post: dict) -> dict:
-    """Attaches the owner_username to a post dictionary."""
-    user = db.get_user_by_id(post["owner_id"])
-    post_copy = post.copy()
-
-    post_copy["owner_username"] = user["username"] if user else "Unknown User"
-    return post_copy
 
 # ==========================================
 # 1. All_posts (No login required)
 # ==========================================
 @router.get("/", response_model=List[TradePostResponse])
-def get_all_posts():
+def get_all_posts(status: str = None):
     """Fetches every active trade post on the platform."""
     posts = db.get_all_posts()
-    return [enrich_post(post) for post in posts]
+    enriched_posts = [enrich_post(post) for post in posts]
+
+    # Filter the result according to status
+    if status:
+        return [post for post in enriched_posts if post.get("status") == status]
+        
+    return enriched_posts
 
 
 # ==========================================
@@ -141,6 +140,6 @@ def get_post_with_offers(post_id: int, current_user: dict = Depends(get_current_
     associated_offers = db.get_offers_by_post(post_id)
     
     return {
-        "post": post,
-        "offers": associated_offers
+        "post": enrich_post(post),
+        "offers": [enrich_offer(offer) for offer in associated_offers]
     }
