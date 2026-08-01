@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from phase2.schemas.post_schema import TradePostResponse
 
 class OfferCreate(BaseModel):
     post_id: int                           # The item you want
@@ -22,3 +23,6 @@ class OfferResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class OfferWithPostResponse(OfferResponse):
+    post: Optional[TradePostResponse] = None
