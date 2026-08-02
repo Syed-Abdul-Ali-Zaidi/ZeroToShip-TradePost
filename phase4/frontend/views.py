@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
 router = APIRouter(tags=["Frontend Views"])
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="phase4/templates")
 
 # ==========================================
 # 1. POSTS & ROOT VIEWS

@@ -4,15 +4,22 @@
 <div class="auth-wrapper d-flex justify-content-center mt-4">
     <div class="auth-card card shadow p-4" style="width: 100%; max-width: 600px;">
         <h2 class="page-heading mb-2">Propose an Offer</h2>
-        <p class="text-muted mb-4">Detail what you are willing to trade for this item.</p>
+        <p class="text-muted mb-4">Select one of your open listings to trade for this item.</p>
 
         <form id="offerCreateForm">
             <!-- Hidden field populated by JS via URL parameter -->
             <input type="hidden" id="targetPostId"> 
 
+            <div class="mb-3">
+                <label for="offeredPostSelect" class="form-label fw-semibold">Select Your Listing to Trade</label>
+                <select class="form-select" id="offeredPostSelect" required>
+                    <option value="" selected disabled>Loading your open listings...</option>
+                </select>
+            </div>
+
             <div class="mb-4">
-                <label for="offerMessage" class="form-label fw-semibold">Your Proposal</label>
-                <textarea class="form-control" id="offerMessage" rows="5" placeholder="I can offer my..." required></textarea>
+                <label for="offerMessage" class="form-label fw-semibold">Additional Proposal Notes</label>
+                <textarea class="form-control" id="offerMessage" rows="4" placeholder="Add any extra details about your trade..."></textarea>
             </div>
             
             <button class="btn btn-primary w-100" type="submit" id="submitOfferBtn">Send Offer</button>

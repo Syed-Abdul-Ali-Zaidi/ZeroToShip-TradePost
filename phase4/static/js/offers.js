@@ -1,17 +1,14 @@
 document.addEventListener("DOMContentLoaded", () => {
+    
+    const myUserId = getUserIdFromToken();
+    const pathname = window.location.pathname;
 
-    const targetId = getIdFromPath(); // from auth.js -- works for /posts/5, /offers/9/accept, /offers/delete_offer/9
-    const myUserId = getUserIdFromToken(); // from auth.js
-
-    // Badge + action markup for a single offer, from the CURRENT user's point of view.
-    // Turn state is driven by turn_holder_id, NOT offer.status -- status stays
-    // "Pending" for the whole back-and-forth, only turn_holder_id changes each round.
-    function turnBadge(offer) {
+    function getTurnBadge(offer) {
         if (offer.status !== "Pending") {
             const cls = offer.status === "Accepted" ? "bg-success" : "bg-secondary";
             return { badge: `<span class="badge ${cls}">${offer.status}</span>`, myTurn: false };
         }
-        const myTurn = offer.turn_holder_id === myUserId;
+        const myTurn = offer.turn_holder_id == myUserId;
         return {
             badge: myTurn
                 ? `<span class="badge bg-warning text-dark">Your Turn</span>`
@@ -20,17 +17,25 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
+    // Helper to safely extract the relevant ID from the URL path
+    function getPathId() {
+        const parts = pathname.split("/").filter(Boolean);
+        const idPart = parts.reverse().find(p => /^\d+$/.test(p));
+        return idPart ? parseInt(idPart, 10) : null;
+    }
+
     // ==========================================
-    // 1. POST DETAILS & INBOUND OFFERS (owner-only panel)
+    // 1. POST DETAILS & INBOUND OFFERS
     // ==========================================
     const detailsContainer = document.getElementById("post-details-container");
     const offersContainer = document.getElementById("post-offers-container");
     const makeOfferBtn = document.getElementById("makeOfferBtn");
 
     if (detailsContainer) {
-        async function loadPostAndOffers() {
+        const postId = getPathId();
+        (async function loadPostDetails() {
             try {
-                const postRes = await fetch(`/api/posts/${targetId}`, { headers: getAuthHeaders(true) });
+                const postRes = await fetch(`/api/posts/${postId}`, { headers: getAuthHeaders(true) });
                 if (!postRes.ok) throw new Error("Post not found");
                 const post = await postRes.json();
 
@@ -44,30 +49,24 @@ document.addEventListener("DOMContentLoaded", () => {
                     <p class="mb-0">${post.description}</p>
                 `;
 
-                const isOwner = post.owner_id === myUserId;
+                const isOwner = post.owner_id == myUserId;
 
-                // "Propose Trade" only makes sense if you don't already own this post
                 if (makeOfferBtn) {
                     if (isOwner) {
                         makeOfferBtn.classList.add("d-none");
+                        makeOfferBtn.style.display = "none"; // Ensure button is hidden on your own post
                     } else {
+                        makeOfferBtn.classList.remove("d-none");
+                        makeOfferBtn.style.display = "inline-block";
                         makeOfferBtn.href = `/offers/create_offer?post_id=${post.post_id}`;
                     }
                 }
 
-                // Inbound offers are only visible to the post's owner (the API
-                // itself enforces this and returns 403 for anyone else), so
-                // don't even try to render the panel for non-owners.
-                if (!offersContainer) return;
-                if (!isOwner) {
-                    offersContainer.innerHTML = "";
-                    return;
-                }
+                if (!offersContainer || !isOwner) return; // Only owner sees inbound offers
 
-                const offersRes = await fetch(`/api/posts/${targetId}/offers`, { headers: getAuthHeaders(true) });
-                if (!offersRes.ok) throw new Error("Could not load offers");
-                const data = await offersRes.json();
-                const offers = data.offers || [];
+                const offersRes = await fetch(`/api/posts/${postId}/offers`, { headers: getAuthHeaders(true) });
+                const offersData = await offersRes.json();
+                const offers = offersData.offers || [];
 
                 if (offers.length === 0) {
                     offersContainer.innerHTML = `<p class="text-muted">No offers received yet.</p>`;
@@ -75,13 +74,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 offersContainer.innerHTML = "";
-                offers.forEach((offer) => {
-                    const { badge, myTurn } = turnBadge(offer);
-                    const actions =
-                        offer.status === "Pending" && myTurn
-                            ? `<a href="/offers/${offer.offer_id}/accept" class="btn btn-sm btn-success">Accept Trade</a>
-                               <a href="/offers/delete_offer/${offer.offer_id}" class="btn btn-sm btn-outline-danger">Decline</a>`
-                            : "";
+                offers.forEach(offer => {
+                    const { badge, myTurn } = getTurnBadge(offer);
+                    
+                    // Added Counter Offer button pointing to /offers/edit_offer/{offer_id}
+                    const actions = offer.status === "Pending" && myTurn
+                        ? `<a href="/offers/${offer.offer_id}/accept" class="btn btn-sm btn-success">Accept Trade</a>
+                           <a href="/offers/edit_offer/${offer.offer_id}" class="btn btn-sm btn-outline-primary">Counter Offer</a>
+                           <a href="/offers/delete_offer/${offer.offer_id}" class="btn btn-sm btn-outline-danger">Decline</a>`
+                        : "";
 
                     offersContainer.insertAdjacentHTML("beforeend", `
                         <div class="card shadow-sm mb-3 border-start border-4 border-primary">
@@ -91,53 +92,94 @@ document.addEventListener("DOMContentLoaded", () => {
                                     ${badge}
                                 </div>
                                 <p class="mb-3">${offer.offered_item_details}</p>
-                                <div class="d-flex justify-content-end gap-2">
-                                    ${actions}
-                                </div>
+                                <div class="d-flex justify-content-end gap-2">${actions}</div>
                             </div>
                         </div>
                     `);
                 });
-            } catch (error) {
-                console.error(error);
+            } catch (e) {
                 detailsContainer.innerHTML = `<p class="text-danger">Failed to load details.</p>`;
             }
-        }
-        loadPostAndOffers();
+        })();
     }
 
     // ==========================================
-    // 2. CREATE OUTBOUND OFFER
+    // 2. CREATE OR EDIT (COUNTER) OUTBOUND OFFER
     // ==========================================
     const offerCreateForm = document.getElementById("offerCreateForm");
     if (offerCreateForm) {
+        const isEditMode = pathname.includes("/edit_offer/");
+        const editOfferId = isEditMode ? getPathId() : null;
+
         const urlParams = new URLSearchParams(window.location.search);
         const postId = urlParams.get("post_id");
-        if (postId) document.getElementById("targetPostId").value = postId;
+        if (postId && !isEditMode) {
+            document.getElementById("targetPostId").value = postId;
+        }
+
+        if (isEditMode) {
+            const heading = document.querySelector(".auth-card h2") || document.querySelector("h2.page-heading");
+            if (heading) heading.innerText = "Submit Counter Offer";
+            const submitBtn = document.getElementById("submitOfferBtn");
+            if (submitBtn) submitBtn.innerText = "Send Counter Offer";
+        }
+
+        const selectEl = document.getElementById("offeredPostSelect");
+        if (selectEl && !isEditMode) {
+            (async function populateListings() {
+                try {
+                    const res = await fetch("/api/posts/", { headers: getAuthHeaders(true) });
+                    const posts = await res.json();
+                    const openPosts = posts.filter(p => p.owner_id == myUserId && p.status === "Open");
+
+                    if (openPosts.length === 0) {
+                        selectEl.innerHTML = `<option value="" disabled selected>No open listings available</option>`;
+                        return;
+                    }
+                    
+                    selectEl.innerHTML = `<option value="" disabled selected>Choose your listing...</option>`;
+                    openPosts.forEach(post => {
+                        selectEl.insertAdjacentHTML("beforeend", `<option value="${post.title}">${post.title}</option>`);
+                    });
+                } catch (e) {
+                    selectEl.innerHTML = `<option value="" disabled selected>Error loading listings</option>`;
+                }
+            })();
+        }
 
         offerCreateForm.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const postIdVal = parseInt(document.getElementById("targetPostId").value, 10);
-            if (!postIdVal) {
-                alert("Missing target post -- go back to the item you want to trade for and click Propose Offer again.");
-                return;
-            }
+            const selectedTitle = selectEl ? selectEl.value : "";
+            const notes = document.getElementById("offerMessage").value;
+            const details = selectedTitle ? `Offering: ${selectedTitle}. Notes: ${notes}` : notes;
 
-            const payload = {
-                post_id: postIdVal,
-                offered_item_details: document.getElementById("offerMessage").value
-            };
+            if (isEditMode) {
+                try {
+                    const res = await fetch(`/api/offers/edit_offer/${editOfferId}`, {
+                        method: "PUT",
+                        headers: getAuthHeaders(true),
+                        body: JSON.stringify({ offered_item_details: details })
+                    });
+                    if (!res.ok) throw new Error("Failed to send counter offer");
+                    window.location.href = "/offers/my_offers";
+                } catch (e) {
+                    alert("Failed to send counter offer.");
+                }
+            } else {
+                const postIdVal = parseInt(document.getElementById("targetPostId").value, 10);
+                if (!postIdVal) return alert("Missing target post.");
 
-            try {
-                const res = await fetch("/api/offers/create_offer", {
-                    method: "POST",
-                    headers: getAuthHeaders(true),
-                    body: JSON.stringify(payload)
-                });
-                if (!res.ok) throw new Error("Could not send offer");
-                window.location.href = "/offers/my_offers";
-            } catch (error) {
-                alert("Failed to propose trade.");
+                try {
+                    const res = await fetch("/api/offers/create_offer", {
+                        method: "POST",
+                        headers: getAuthHeaders(true),
+                        body: JSON.stringify({ post_id: postIdVal, offered_item_details: details })
+                    });
+                    if (!res.ok) throw new Error("Failed to send offer");
+                    window.location.href = "/offers/my_offers";
+                } catch (e) {
+                    alert("Failed to send offer.");
+                }
             }
         });
     }
@@ -147,77 +189,66 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================
     const myOffersGrid = document.getElementById("my-offers-grid");
     if (myOffersGrid) {
-        async function fetchMyOffers() {
+        (async function fetchMyOffers() {
             try {
                 const res = await fetch("/api/offers/my_offers", { headers: getAuthHeaders(true) });
-                if (!res.ok) throw new Error("Failed to load offers");
                 const offers = await res.json();
 
-                myOffersGrid.innerHTML = "";
                 if (offers.length === 0) {
                     myOffersGrid.innerHTML = `<p class="text-center text-muted">You haven't made any offers yet.</p>`;
                     return;
                 }
 
-                offers.forEach((offer) => {
-                    const { badge } = turnBadge(offer);
-                    const targetTitle = offer.post ? offer.post.title : `Post #${offer.post_id}`;
+                myOffersGrid.innerHTML = "";
+                offers.forEach(offer => {
+                    const { badge } = getTurnBadge(offer);
+                    const title = offer.post ? offer.post.title : `Post #${offer.post_id}`;
+                    
                     myOffersGrid.insertAdjacentHTML("beforeend", `
                         <div class="card shadow-sm mb-4">
                              <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                 <small class="text-muted">Target: <strong>${targetTitle}</strong></small>
+                                 <small class="text-muted">Target: <strong>${title}</strong></small>
                                  ${badge}
                              </div>
                              <div class="card-body">
                                  <p><strong>Your Proposal:</strong> ${offer.offered_item_details}</p>
                              </div>
                              <div class="card-footer d-flex justify-content-end bg-white">
-                                 ${offer.status === "Pending"
-                                     ? `<a href="/offers/delete_offer/${offer.offer_id}" class="btn btn-sm btn-outline-danger">Withdraw</a>`
-                                     : ""}
+                                 ${offer.status === "Pending" ? `<a href="/offers/delete_offer/${offer.offer_id}" class="btn btn-sm btn-outline-danger">Withdraw</a>` : ""}
                              </div>
                          </div>
                     `);
                 });
-            } catch (error) {
+            } catch (e) {
                 myOffersGrid.innerHTML = `<p class="text-danger">Failed to load offers.</p>`;
             }
-        }
-        fetchMyOffers();
+        })();
     }
 
     // ==========================================
-    // 4. ACCEPT / DELETE CONFIRMATIONS
+    // 4. ACTION CONFIRMATIONS (Accept/Delete)
     // ==========================================
     const acceptBtn = document.getElementById("confirmAcceptOfferBtn");
     if (acceptBtn) {
         acceptBtn.addEventListener("click", async () => {
+            const offerId = getPathId();
             try {
-                const res = await fetch(`/api/offers/${targetId}/accept`, {
-                    method: "POST",
-                    headers: getAuthHeaders(true)
-                });
-                if (!res.ok) throw new Error("Failed");
+                const res = await fetch(`/api/offers/${offerId}/accept`, { method: "POST", headers: getAuthHeaders(true) });
+                if (!res.ok) throw new Error();
                 window.location.href = "/posts/my_posts";
-            } catch (e) {
-                alert("Could not accept trade.");
-            }
+            } catch (e) { alert("Could not accept trade."); }
         });
     }
 
     const deleteOfferBtn = document.getElementById("confirmDeleteOfferBtn");
     if (deleteOfferBtn) {
         deleteOfferBtn.addEventListener("click", async () => {
+            const offerId = getPathId();
             try {
-                const res = await fetch(`/api/offers/delete_offer/${targetId}`, {
-                    method: "DELETE",
-                    headers: getAuthHeaders(true)
-                });
-                if (!res.ok) throw new Error("Failed");
+                const res = await fetch(`/api/offers/delete_offer/${offerId}`, { method: "DELETE", headers: getAuthHeaders(true) });
+                if (!res.ok) throw new Error();
                 window.location.href = "/offers/my_offers";
-            } catch (e) {
-                alert("Could not withdraw offer.");
-            }
+            } catch (e) { alert("Could not withdraw offer."); }
         });
     }
 });

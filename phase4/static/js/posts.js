@@ -1,21 +1,20 @@
 document.addEventListener("DOMContentLoaded", () => {
-
+    
+    // ==========================================
+    // POST RENDERER HELPERS
+    // ==========================================
     const statusBadge = (status) =>
         status === "Open"
             ? `<span class="badge bg-success">Open</span>`
             : `<span class="badge bg-secondary">${status}</span>`;
 
-    // Builds one post card. `ownerView=true` shows Edit/Delete/View Offers
-    // (used on "My Listings"); otherwise shows View Details/Propose Offer
-    // (used on the public marketplace).
     function buildPostCard(post, ownerView) {
         const imageHtml = post.image_url
-            ? `<img src="${post.image_url}" class="card-img-top mb-3 rounded" style="max-height: 200px; object-fit: cover;" alt="Item">`
+            ? `<img src="${post.image_url}" class="card-img-top mb-3 rounded" style="max-height: 200px; object-fit: cover;">`
             : "";
 
         const actionsHtml = ownerView
             ? `<a href="/posts/${post.post_id}/offers" class="btn btn-sm btn-primary">View Offers</a>
-               <a href="/posts/edit_post/${post.post_id}" class="btn btn-sm btn-outline-secondary">Edit</a>
                <a href="/posts/delete_post/${post.post_id}" class="btn btn-sm btn-outline-danger">Delete</a>`
             : `<a href="/posts/${post.post_id}" class="btn btn-sm btn-outline-secondary">View Details</a>
                <a href="/offers/create_offer?post_id=${post.post_id}" class="btn btn-sm btn-primary">Propose Offer</a>`;
@@ -44,67 +43,49 @@ document.addEventListener("DOMContentLoaded", () => {
             container.innerHTML = `<p class="text-center text-muted mt-4">${emptyMessage}</p>`;
             return;
         }
-        posts.forEach((post) => container.insertAdjacentHTML("beforeend", buildPostCard(post, ownerView)));
+        posts.forEach(post => container.insertAdjacentHTML("beforeend", buildPostCard(post, ownerView)));
     }
 
     // ==========================================
-    // STATUS FILTER (shared by marketplace + my listings)
+    // FEED LOADING (Marketplace & My Listings)
     // ==========================================
-    const statusFilter = document.getElementById("statusFilter");
     const marketGrid = document.getElementById("marketplace-grid");
     const myPostsGrid = document.getElementById("my-posts-grid");
+    const statusFilter = document.getElementById("statusFilter");
 
-    function currentStatusQuery() {
-        const val = statusFilter ? statusFilter.value : "";
-        return val ? `?status=${encodeURIComponent(val)}` : "";
-    }
+    const getStatusQuery = () => statusFilter && statusFilter.value ? `?status=${encodeURIComponent(statusFilter.value)}` : "";
 
-    // ==========================================
-    // 1. MARKETPLACE FEED (public)
-    // ==========================================
-    async function fetchPosts() {
-        try {
-            const response = await fetch(`/api/posts/${currentStatusQuery()}`, {
-                headers: getAuthHeaders(true)
-            });
-            if (!response.ok) throw new Error("Failed to load posts");
-            const posts = await response.json();
-            renderPosts(marketGrid, posts, false, "No items listed yet.");
-        } catch (error) {
-            marketGrid.innerHTML = `<p class="text-danger text-center mt-4">Error loading marketplace data.</p>`;
+    async function loadFeeds() {
+        if (marketGrid) {
+            try {
+                const res = await fetch(`/api/posts/${getStatusQuery()}`, { headers: getAuthHeaders(true) });
+                const posts = await res.json();
+                renderPosts(marketGrid, posts, false, "No items listed yet.");
+            } catch (e) {
+                marketGrid.innerHTML = `<p class="text-danger text-center">Failed to load marketplace.</p>`;
+            }
         }
-    }
-
-    // ==========================================
-    // 2. MY LISTINGS (was completely missing before)
-    // ==========================================
-    async function fetchMyPosts() {
-        try {
-            const response = await fetch(`/api/posts/my_posts${currentStatusQuery()}`, {
-                headers: getAuthHeaders(true)
-            });
-            if (!response.ok) throw new Error("Failed to load your posts");
-            const posts = await response.json();
-            renderPosts(myPostsGrid, posts, true, "You haven't listed anything yet.");
-        } catch (error) {
-            myPostsGrid.innerHTML = `<p class="text-danger text-center mt-4">Error loading your listings.</p>`;
+        if (myPostsGrid) {
+            try {
+                const res = await fetch(`/api/posts/my_posts${getStatusQuery()}`, { headers: getAuthHeaders(true) });
+                const posts = await res.json();
+                renderPosts(myPostsGrid, posts, true, "You haven't listed anything yet.");
+            } catch (e) {
+                myPostsGrid.innerHTML = `<p class="text-danger text-center">Failed to load your listings.</p>`;
+            }
         }
     }
 
     if (marketGrid || myPostsGrid) {
         if (statusFilter) {
             statusFilter.classList.remove("d-none");
-            statusFilter.addEventListener("change", () => {
-                if (marketGrid) fetchPosts();
-                if (myPostsGrid) fetchMyPosts();
-            });
+            statusFilter.addEventListener("change", loadFeeds);
         }
-        if (marketGrid) fetchPosts();
-        if (myPostsGrid) fetchMyPosts();
+        loadFeeds();
     }
 
     // ==========================================
-    // 3. CREATE POST (WITH IMAGE UPLOAD)
+    // CREATE LISTING
     // ==========================================
     const createForm = document.getElementById("postCreateForm");
     if (createForm) {
@@ -121,15 +102,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (imageFile) {
                     const imgData = new FormData();
                     imgData.append("file", imageFile);
-
                     const imgRes = await fetch("/api/posts/upload_image", {
                         method: "POST",
-                        headers: getAuthHeaders(false), // don't set JSON content-type for FormData
+                        headers: getAuthHeaders(false), // No JSON content-type for FormData
                         body: imgData
                     });
                     if (!imgRes.ok) throw new Error("Image upload failed");
-                    const imgJson = await imgRes.json();
-                    imageUrl = imgJson.image_url;
+                    imageUrl = (await imgRes.json()).image_url;
                 }
 
                 const postPayload = {
@@ -144,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify(postPayload)
                 });
 
-                if (!postRes.ok) throw new Error("Post creation failed");
+                if (!postRes.ok) throw new Error("Failed to create post");
                 window.location.href = "/posts/my_posts";
             } catch (error) {
                 alert(error.message);
@@ -155,20 +134,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================
-    // 4. DELETE POST CONFIRMATION
+    // DELETE LISTING
     // ==========================================
-    const deletePostBtn = document.getElementById("confirmDeletePostBtn");
-    if (deletePostBtn) {
-        deletePostBtn.addEventListener("click", async () => {
-            const postId = getIdFromPath(); // from auth.js
+    const deleteBtn = document.getElementById("confirmDeletePostBtn");
+    if (deleteBtn) {
+        deleteBtn.addEventListener("click", async () => {
+            const postId = getIdFromPath();
             try {
                 const res = await fetch(`/api/posts/delete_post/${postId}`, {
                     method: "DELETE",
                     headers: getAuthHeaders(true)
                 });
-                if (!res.ok) throw new Error("Could not delete post");
+                if (!res.ok) throw new Error("Could not delete");
                 window.location.href = "/posts/my_posts";
-            } catch (error) {
+            } catch (e) {
                 alert("Error deleting listing.");
             }
         });
