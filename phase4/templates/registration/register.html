@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block title %}Register - TradePost{% endblock %}
+{% block content %}
+<div class="auth-wrapper d-flex justify-content-center mt-5">
+    <div class="auth-card card shadow p-4" style="width: 100%; max-width: 400px;">
+        <h2 class="page-heading mb-4 text-center">Register</h2>
+        <form id="registerForm">
+            <div class="mb-3">
+                <label for="regUsername" class="form-label">Username</label>
+                <input type="text" class="form-control" id="regUsername" required>
+            </div>
+            <div class="mb-3">
+                <label for="regPassword" class="form-label">Password</label>
+                <input type="password" class="form-control" id="regPassword" required>
+            </div>
+            <button class="btn btn-primary w-100 mt-2" type="submit">Register</button>
+        </form>
+        <p class="page-subtext text-center mt-3">Already have an account? <a href="/accounts/login">Login here</a></p>
+    </div>
+</div>
+<script src="/static/js/main.js"></script>
+{% endblock %}

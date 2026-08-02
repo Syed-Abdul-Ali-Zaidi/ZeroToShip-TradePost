@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block title %}Create Listing - TradePost{% endblock %}
+{% block content %}
+<div class="auth-wrapper d-flex justify-content-center mt-4">
+    <div class="auth-card card shadow p-4" style="width: 100%; max-width: 600px;">
+        <h2 class="page-heading mb-4" id="form-title">Create a Trade Listing</h2>
+        
+        <!-- Modified to accept multipart/form-data for the image upload step -->
+        <form id="postCreateForm" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="postTitle" class="form-label fw-semibold">Item Title</label>
+                <input type="text" class="form-control" id="postTitle" placeholder="e.g. Vintage Acoustic Guitar" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="postDescription" class="form-label fw-semibold">Description & Condition</label>
+                <textarea class="form-control" id="postDescription" rows="4" required></textarea>
+            </div>
+
+            <div class="mb-4">
+                <label for="postImage" class="form-label fw-semibold">Upload Image (Optional)</label>
+                <input type="file" class="form-control" id="postImage" accept="image/png, image/jpeg">
+            </div>
+
+            <button class="btn btn-primary w-100" type="submit" id="submitPostBtn">Publish Listing</button>
+        </form>
+        <a href="/posts/" class="d-inline-block mt-3 text-decoration-none">&larr; Back to marketplace</a>
+    </div>
+</div>
+<script src="/static/js/posts.js"></script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block title %}Accept Trade{% endblock %}
+{% block content %}
+<div class="confirm-wrapper d-flex justify-content-center mt-5">
+    <div class="confirm-card card shadow text-center p-5" style="max-width: 450px;">
+        <i class="bi bi-check2-circle" style="font-size: 3rem; color: #0d6efd;"></i>
+        <h2 class="page-heading mt-3">Accept this offer?</h2>
+        <p class="page-subtext text-muted">Accepting this offer will close your listing and mark the trade as finalized.</p>
+
+        <div class="d-flex justify-content-center gap-2 mt-4">
+            <button class="btn btn-success" id="confirmAcceptOfferBtn">Finalize Trade</button>
+            <button onclick="history.back()" class="btn btn-outline-primary">Review Again</button>
+        </div>
+    </div>
+</div>
+<script src="/static/js/offers.js"></script>
+{% endblock %}

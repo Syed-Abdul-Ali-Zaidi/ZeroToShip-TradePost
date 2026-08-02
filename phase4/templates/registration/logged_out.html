@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block title %}Logged Out{% endblock %}
+{% block content %}
+<div class="confirm-wrapper d-flex justify-content-center mt-5">
+    <div class="confirm-card card shadow text-center p-5" style="max-width: 450px;">
+        <i class="bi bi-check-circle-fill" style="font-size: 3rem; color: #198754;"></i>
+        <h2 class="page-heading mt-3">Logged out</h2>
+        <p class="page-subtext text-muted">You have been logged out successfully.</p>
+        <div class="d-flex justify-content-center gap-2 mt-4">
+            <a href="/accounts/login" class="btn btn-primary">Login again</a>
+            <a href="/posts/" class="btn btn-outline-primary">Marketplace</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

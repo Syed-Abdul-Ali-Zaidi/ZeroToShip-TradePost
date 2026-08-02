@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block title %}Withdraw Offer{% endblock %}
+{% block content %}
+<div class="confirm-wrapper d-flex justify-content-center mt-5">
+    <div class="confirm-card card shadow text-center p-5" style="max-width: 450px;">
+        <i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem; color: #dc3545;"></i>
+        <h2 class="page-heading mt-3">Withdraw Offer?</h2>
+        <p class="page-subtext text-muted">This will permanently delete your proposed trade.</p>
+
+        <div class="d-flex justify-content-center gap-2 mt-4">
+            <button class="btn btn-danger" id="confirmDeleteOfferBtn">Yes, Withdraw</button>
+            <button onclick="history.back()" class="btn btn-outline-primary">Cancel</button>
+        </div>
+    </div>
+</div>
+<script src="/static/js/offers.js"></script>
+{% endblock %}
