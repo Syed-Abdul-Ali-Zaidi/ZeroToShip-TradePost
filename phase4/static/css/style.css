@@ -1,0 +1,238 @@
+/* =========================================================
+   TradePost theme
+   Green accent, Black (dark mode) / White (light mode) base
+   ========================================================= */
+
+:root {
+    --brand-green: #5c8368;
+    --brand-green-dark: #48684f;
+    --brand-green-soft: rgba(92, 131, 104, 0.14);
+    --radius-lg: 14px;
+    --radius-md: 10px;
+    --radius-sm: 6px;
+    --page-max-width: 1200px;
+}
+
+/* ---------- Dark mode (Black) ---------- */
+[data-bs-theme="dark"] {
+    --bg-app: #14161a;
+    --bg-card: #1c1f24;
+    --bg-elevated: #23272d;
+    --border-soft: #2c3036;
+    --text-main: #d8dde1;
+    --text-muted: #8b9299;
+    --input-bg: #23272d;
+    --input-border: #34383f;
+}
+
+/* ---------- Light mode (White) ---------- */
+[data-bs-theme="light"] {
+    --bg-app: #fafaf8;
+    --bg-card: #ffffff;
+    --bg-elevated: #f2f3f0;
+    --border-soft: #e2e4e0;
+    --text-main: #2b2e2c;
+    --text-muted: #6b7269;
+    --input-bg: #ffffff;
+    --input-border: #dadcd7;
+}
+
+body {
+    background-color: var(--bg-app);
+    color: var(--text-main);
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.container {
+    max-width: var(--page-max-width);
+}
+
+@media (min-width: 1400px) {
+    .container {
+        max-width: 1280px;
+    }
+}
+
+a {
+    color: var(--brand-green);
+    text-decoration: none;
+}
+a:hover {
+    color: var(--brand-green-dark);
+    text-decoration: underline;
+}
+
+/* ---------- Navbar ---------- */
+.navbar {
+    background-color: var(--bg-card) !important;
+    border-bottom: 1px solid var(--border-soft);
+}
+.navbar-brand {
+    font-weight: 700;
+    color: var(--brand-green) !important;
+    letter-spacing: 0.3px;
+}
+.nav-link.active {
+    color: var(--brand-green) !important;
+    font-weight: 600;
+}
+.nav-link:hover {
+    color: var(--brand-green) !important;
+}
+
+.theme-toggle-btn {
+    border: 1px solid var(--border-soft);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+}
+.theme-toggle-btn:hover {
+    border-color: var(--brand-green);
+    color: var(--brand-green);
+}
+
+/* ---------- Buttons ---------- */
+.btn-primary {
+    background-color: var(--brand-green);
+    border-color: var(--brand-green);
+    color: #ffffff;
+}
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--brand-green-dark);
+    border-color: var(--brand-green-dark);
+}
+.btn-outline-primary {
+    color: var(--brand-green);
+    border-color: var(--brand-green);
+}
+.btn-outline-primary:hover {
+    background-color: var(--brand-green);
+    border-color: var(--brand-green);
+    color: #fff;
+}
+
+/* ---------- Cards (marketplace / listings) ---------- */
+.feed-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+.feed-card .card-body {
+    background-color: transparent;
+}
+.feed-card img {
+    width: 100%;
+    max-height: 420px;
+    object-fit: cover;
+    border-top: 1px solid var(--border-soft);
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.card-text {
+    color: var(--text-main);
+}
+h6.mb-0 {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+/* ---------- Forms ---------- */
+form.form,
+.auth-card form,
+.confirm-card form {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+}
+
+form p {
+    margin-bottom: 1rem;
+}
+
+form label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+form input[type="text"],
+form input[type="email"],
+form input[type="password"],
+form input[type="number"],
+form input[type="file"],
+form input[type="search"],
+form textarea,
+form select {
+    width: 100%;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-main);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 0.75rem;
+}
+form input:focus,
+form textarea:focus,
+form select:focus {
+    outline: none;
+    border-color: var(--brand-green);
+    box-shadow: 0 0 0 0.2rem var(--brand-green-soft);
+}
+form textarea {
+    min-height: 110px;
+}
+
+/* Search + filter controls in navbar */
+.form-control,
+.form-select {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-main);
+}
+.form-control::placeholder {
+    color: var(--text-muted);
+}
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--input-bg);
+    color: var(--text-main);
+    border-color: var(--brand-green);
+    box-shadow: 0 0 0 0.2rem var(--brand-green-soft);
+}
+
+/* ---------- Auth / confirm pages ---------- */
+.auth-wrapper,
+.confirm-wrapper {
+    display: flex;
+    justify-content: center;
+    padding-top: 2.5rem;
+}
+.auth-card,
+.confirm-card {
+    width: 100%;
+    max-width: 560px;
+}
+.confirm-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    text-align: center;
+}
+
+.page-heading {
+    color: var(--text-main);
+    font-weight: 700;
+}
+.page-subtext {
+    color: var(--text-muted);
+}
