@@ -21,6 +21,10 @@ def render_my_posts(request: Request):
 @router.get("/posts/create_post")
 def render_create_post(request: Request):
     """Serves the blank form to create a new post."""
+    token = request.cookies.get("access_token")
+    if not token:
+        print("Token: ",token)
+        return templates.TemplateResponse(request, "registration/login.html")
     return templates.TemplateResponse(request, "posts/post_create_form.html")
 
 @router.get("/posts/{post_id}")
@@ -50,6 +54,10 @@ def render_post_offers(request: Request, post_id: int):
 @router.get("/offers/create_offer")
 def render_create_offer(request: Request):
     """Serves the form to propose a new trade."""
+    token = request.cookies.get("access_token")
+    if not token:
+        print("Token: ",token)
+        return templates.TemplateResponse(request, "registration/login.html")
     return templates.TemplateResponse(request, "offers/offer_create_form.html")
 
 @router.get("/offers/edit_offer/{offer_id}")
@@ -90,4 +98,6 @@ def render_login(request: Request):
 @router.get("/accounts/logout")
 def render_logout(request: Request):
     """Serves the goodbye/logout confirmation screen."""
-    return templates.TemplateResponse(request, "registration/logged_out.html")
+    response = templates.TemplateResponse(request, "registration/logged_out.html")
+    response.delete_cookie("access_token")
+    return response

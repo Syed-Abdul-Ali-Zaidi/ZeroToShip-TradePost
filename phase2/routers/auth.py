@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from phase2.database.json_store import db
@@ -43,7 +43,7 @@ def register_user(user_data: UserCreate):
     return user_dict
 
 @router.post("/login", response_model=Token)
-def login_user(credentials: UserLogin):
+def login_user(credentials: UserLogin, response: Response):
     user = db.get_user_by_username(credentials.username)
     
     if not user or user["password"] != hash_password(credentials.password):
@@ -53,5 +53,14 @@ def login_user(credentials: UserLogin):
         )
         
     access_token = create_access_token(data={"sub": str(user["user_id"])})
-    
+
+    # Set it as a cookie so server-rendered pages can read it too
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,   # JS can't read it — safer
+        samesite="lax",
+        max_age=3600      # match your token expiry
+    )
+
     return {"access_token": access_token, "token_type": "bearer"}
