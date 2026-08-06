@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const detailsContainer = document.getElementById("post-details-container");
     const offersContainer = document.getElementById("post-offers-container");
     const makeOfferBtn = document.getElementById("makeOfferBtn");
+    const offersHeading = document.getElementById("offersHeading");
 
     if (detailsContainer) {
         const postId = getPathId();
@@ -52,9 +53,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 const isOwner = post.owner_id == myUserId;
 
                 if (makeOfferBtn) {
-                    if (isOwner) {
+                    if (isOwner || post.status !== "Open") {
                         makeOfferBtn.classList.add("d-none");
-                        makeOfferBtn.style.display = "none"; // Ensure button is hidden on your own post
+                        makeOfferBtn.style.display = "none";
                     } else {
                         makeOfferBtn.classList.remove("d-none");
                         makeOfferBtn.style.display = "inline-block";
@@ -62,18 +63,25 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                if (!offersContainer || !isOwner) return; // Only owner sees inbound offers
+                if (offersHeading) {
+                    offersHeading.textContent = isOwner 
+                    ? "Offers Received"
+                    : "My Offer";
+                }
 
                 const offersRes = await fetch(`/api/posts/${postId}/offers`, { headers: getAuthHeaders(true) });
                 const offersData = await offersRes.json();
                 const offers = offersData.offers || [];
 
                 if (offers.length === 0) {
-                    offersContainer.innerHTML = `<p class="text-muted">No offers received yet.</p>`;
+                    offersContainer.innerHTML = isOwner
+                        ? `<p class="text-muted">No offers received yet.</p>`
+                        : `<p class="text-muted">You haven't made an offer on this listing.</p>`;
+
                     return;
                 }
 
-                offersContainer.innerHTML = "";
+                // offersContainer.innerHTML = "";
                 offers.forEach(offer => {
                     const { badge, myTurn } = getTurnBadge(offer);
                     
