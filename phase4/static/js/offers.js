@@ -145,9 +145,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         return;
                     }
                     
-                    selectEl.innerHTML = `<option value="" disabled selected>Choose your listing...</option>`;
+                    selectEl.innerHTML = `<option value="" selected>Choose your listing...</option>`;
                     openPosts.forEach(post => {
-                        selectEl.insertAdjacentHTML("beforeend", `<option value="${post.title}">${post.title}</option>`);
+                        selectEl.insertAdjacentHTML("beforeend", `<option value="${post.post_id}">${post.title}</option>`);
                     });
                 } catch (e) {
                     selectEl.innerHTML = `<option value="" disabled selected>Error loading listings</option>`;
@@ -157,16 +157,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         offerCreateForm.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const selectedTitle = selectEl ? selectEl.value : "";
             const notes = document.getElementById("offerMessage").value;
-            const details = selectedTitle ? `Offering: ${selectedTitle}. Notes: ${notes}` : notes;
 
             if (isEditMode) {
                 try {
                     const res = await fetch(`/api/offers/edit_offer/${editOfferId}`, {
                         method: "PUT",
                         headers: getAuthHeaders(true),
-                        body: JSON.stringify({ offered_item_details: details })
+                        body: JSON.stringify({ offered_item_details: notes })
                     });
                     if (!res.ok) throw new Error("Failed to send counter offer");
                     window.location.href = "/offers/my_offers";
@@ -177,11 +175,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 const postIdVal = parseInt(document.getElementById("targetPostId").value, 10);
                 if (!postIdVal) return alert("Missing target post.");
 
+                const payload = {
+                    post_id: postIdVal,
+                    offered_item_details: notes,
+                    offered_post_id: (selectEl && selectEl.value) ? parseInt(selectEl.value, 10) : null
+                };
+
                 try {
                     const res = await fetch("/api/offers/create_offer", {
                         method: "POST",
                         headers: getAuthHeaders(true),
-                        body: JSON.stringify({ post_id: postIdVal, offered_item_details: details })
+                        body: JSON.stringify(payload)
                     });
                     if (!res.ok) throw new Error("Failed to send offer");
                     window.location.href = "/offers/my_offers";
