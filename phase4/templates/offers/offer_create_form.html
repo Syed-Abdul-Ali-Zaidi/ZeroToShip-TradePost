@@ -10,9 +10,14 @@
             <!-- Hidden field populated by JS via URL parameter -->
             <input type="hidden" id="targetPostId"> 
 
+            <div id="previousOfferContainer" class="alert alert-secondary d-none mb-4 shadow-sm">
+                <h6 class="fw-bold mb-1">Other Party's Message:</h6>
+                <p id="previousOfferText" class="mb-0 text-dark"></p>
+            </div>
+
             <div class="mb-3">
                 <label for="offeredPostSelect" class="form-label fw-semibold">Select Your Listing to Trade</label>
-                <select class="form-select" id="offeredPostSelect" required>
+                <select class="form-select" id="offeredPostSelect">
                     <option value="" selected disabled>Loading your open listings...</option>
                 </select>
             </div>
