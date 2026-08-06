@@ -156,3 +156,18 @@ def get_my_outbound_offers(current_user: dict = Depends(get_current_user)):
 
         enriched_offers.append(enriched_offer)
     return enriched_offers
+
+# ==========================================
+# 6. Get Offers by offer_id 
+# ==========================================
+@router.get("/{offer_id}", response_model= OfferWithPostResponse)
+def get_single_offer(offer_id: int, current_user: dict = Depends(get_current_user)):
+    offer = db.get_offer_by_id(offer_id)
+    if not offer:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    enriched_offer = enrich_offer(offer)
+
+    post = db.get_post_by_id(offer["post_id"])
+    enriched_offer["post"] = enrich_post(post) if post else None
+
+    return enriched_offer
