@@ -8,25 +8,66 @@ document.addEventListener("DOMContentLoaded", () => {
             ? `<span class="badge bg-success">Open</span>`
             : `<span class="badge bg-secondary">${status}</span>`;
 
-    function buildPostCard(post, ownerView) {
+    const myUserId = getUserIdFromToken();
+    
+    function buildPostCard(post) {
         const imageHtml = post.image_url
             ? `<img src="${post.image_url}" class="card-img-top mb-3 rounded" style="max-height: 200px; object-fit: cover;">`
             : "";
 
-        const actionsHtml = ownerView
-            ? `<a href="/posts/${post.post_id}/offers" class="btn btn-sm btn-primary">View Offers</a>
-               <a href="/posts/delete_post/${post.post_id}" class="btn btn-sm btn-outline-danger">Delete</a>`
-            : `<a href="/posts/${post.post_id}" class="btn btn-sm btn-outline-secondary">View Details</a>
-               <a href="/offers/create_offer?post_id=${post.post_id}" class="btn btn-sm btn-primary">Propose Offer</a>`;
+        const isOwner = post.owner_id == myUserId;
+
+        let actionsHtml;
+
+        if (isOwner) {
+            actionsHtml = `
+                <a href="/posts/${post.post_id}/offers" class="btn btn-sm btn-primary">View Offers</a>
+                <a href="/posts/delete_post/${post.post_id}" class="btn btn-sm btn-outline-danger">Delete</a>
+            `;
+        } else if (post.status === "Open") {
+            actionsHtml = `
+                <a href="/offers/create_offer?post_id=${post.post_id}" class="btn btn-sm btn-primary">Propose Offer</a>
+                <a href="/posts/${post.post_id}" class="btn btn-sm btn-outline-secondary">View Details</a>
+            `;
+        } else {
+            actionsHtml = `
+                <a href="/posts/${post.post_id}" class="btn btn-sm btn-outline-secondary">View Details</a>
+            `;
+        }
 
         return `
             <div class="card feed-card mb-4 shadow-sm p-3">
                 <div class="d-flex justify-content-between align-items-start">
-                    <h5 class="fw-bold">${post.title}</h5>
-                    <div class="d-flex gap-2 align-items-center">
-                        ${statusBadge(post.status)}
-                        ${ownerView ? "" : `<span class="badge bg-light text-dark border">By: ${post.owner_username}</span>`}
+
+                    <!-- Left Section -->
+                    <div class="flex-grow-1">
+
+                        <!-- Avatar + Username -->
+                        <div class="d-flex align-items-center mb-2">
+
+                            <div
+                                class="rounded-circle bg-success text-white fw-bold d-flex justify-content-center align-items-center me-2"
+                                style="width:40px; height:40px; font-size:18px;"
+                            >
+                                ${post.owner_username.charAt(0).toUpperCase()}
+                            </div>
+
+                            <span class="fw-bold fs-5">
+                                ${post.owner_username}
+                            </span>
+
+                        </div>
+
+                        <!-- Title BELOW avatar/username -->
+                        <h4 class="fw-bold mb-0">
+                            ${post.title}
+                        </h4>
+
                     </div>
+
+                    <!-- Right Section -->
+                    ${statusBadge(post.status)}
+
                 </div>
                 ${imageHtml}
                 <p class="text-muted mt-2">${post.description}</p>
@@ -37,13 +78,13 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
     }
 
-    function renderPosts(container, posts, ownerView, emptyMessage) {
+    function renderPosts(container, posts, emptyMessage) {
         container.innerHTML = "";
         if (posts.length === 0) {
             container.innerHTML = `<p class="text-center text-muted mt-4">${emptyMessage}</p>`;
             return;
         }
-        posts.forEach(post => container.insertAdjacentHTML("beforeend", buildPostCard(post, ownerView)));
+        posts.forEach(post => container.insertAdjacentHTML("beforeend", buildPostCard(post)));
     }
 
     // ==========================================
@@ -60,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 const res = await fetch(`/api/posts/${getStatusQuery()}`, { headers: getAuthHeaders(true) });
                 const posts = await res.json();
-                renderPosts(marketGrid, posts, false, "No items listed yet.");
+                renderPosts(marketGrid, posts, "No items listed yet.");
             } catch (e) {
                 marketGrid.innerHTML = `<p class="text-danger text-center">Failed to load marketplace.</p>`;
             }
@@ -69,7 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 const res = await fetch(`/api/posts/my_posts${getStatusQuery()}`, { headers: getAuthHeaders(true) });
                 const posts = await res.json();
-                renderPosts(myPostsGrid, posts, true, "You haven't listed anything yet.");
+                renderPosts(myPostsGrid, posts, "You haven't listed anything yet.");
             } catch (e) {
                 myPostsGrid.innerHTML = `<p class="text-danger text-center">Failed to load your listings.</p>`;
             }
