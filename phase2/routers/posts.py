@@ -120,7 +120,7 @@ def edit_post(post_id: int, post_data: TradePostCreate, current_user: dict = Dep
     
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found.")
-        
+
     # Security: Validate ownership
     validate_post_ownership(
         current_user_id= current_user["user_id"],
@@ -162,21 +162,21 @@ def delete_post(post_id: int, current_user: dict = Depends(get_current_user)):
 # ==========================================
 @router.get("/{post_id}/offers", response_model=Dict[str, Any])
 def get_post_with_offers(post_id: int, current_user: dict = Depends(get_current_user)):
-    """Fetches a specific post and all inbound offers made on it. Strictly locked to the author."""
+    """Fetches a specific post and all inbound offers made on it. Strictly locked to the author.
+       Fetches a specific post and inbound offers made on it by the offer's owner."""
     post = db.get_post_by_id(post_id)
     
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found.")
-        
-    # Security: Validate ownership; Only the post author can view the offers on it
-    validate_post_ownership(
-        current_user_id= current_user["user_id"],
-        post_owner_id= post["owner_id"],
-        message= "You can only view offers on your own trade posts.")
     
     associated_offers = db.get_offers_by_post(post_id)
-    
+
+    if current_user["user_id"] == post["owner_id"]:
+        visible_offers = associated_offers
+    else:
+        visible_offers = [offer for offer in associated_offers if offer["proposer_id"] == current_user["user_id"]]
+
     return {
         "post": enrich_post(post),
-        "offers": [enrich_offer(offer) for offer in associated_offers]
+        "offers": [enrich_offer(offer) for offer in visible_offers]
     }
