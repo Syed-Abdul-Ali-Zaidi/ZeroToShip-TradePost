@@ -81,9 +81,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                // offersContainer.innerHTML = "";
                 offers.forEach(offer => {
                     const { badge, myTurn } = getTurnBadge(offer);
+
+                    // View Post button
+                    const viewPostBtn = offer.offered_post_id
+                        ? `<a href="/posts/${offer.offered_post_id}" class="btn btn-sm btn-outline-info">View Offered Item</a>`
+                        : "";
                     
                     // Added Counter Offer button pointing to /offers/edit_offer/{offer_id}
                     const actions = offer.status === "Pending" && myTurn
@@ -100,7 +104,10 @@ document.addEventListener("DOMContentLoaded", () => {
                                     ${badge}
                                 </div>
                                 <p class="mb-3">${offer.offered_item_details}</p>
-                                <div class="d-flex justify-content-end gap-2">${actions}</div>
+                                <div class="d-flex justify-content-end gap-2">
+                                    ${viewPostBtn}
+                                    ${actions}
+                                </div>
                             </div>
                         </div>
                     `);
@@ -130,25 +137,38 @@ document.addEventListener("DOMContentLoaded", () => {
             if (heading) heading.innerText = "Submit Counter Offer";
             const submitBtn = document.getElementById("submitOfferBtn");
             if (submitBtn) submitBtn.innerText = "Send Counter Offer";
-        }
 
-        const selectEl = document.getElementById("offeredPostSelect");
-        if (selectEl && !isEditMode) {
-            (async function populateListings() {
+            const messageLabel = document.querySelector('label[for="offerMessage"]');
+            if (messageLabel) messageLabel.innerText = "Enter Your Counter Offer";
+
+            const offeredPostLabel = document.querySelector('label[for="offeredPostSelect"]');
+            if (offeredPostLabel) offeredPostLabel.innerText = "Selected Listing to Trade";
+
+            // Fetch the exact offer details directly from the database!
+            (async function fetchOfferDetails() {
                 try {
-                    const res = await fetch("/api/posts/", { headers: getAuthHeaders(true) });
-                    const posts = await res.json();
-                    const openPosts = posts.filter(p => p.owner_id == myUserId && p.status === "Open");
+                    const res = await fetch(`/api/offers/${editOfferId}`, { headers: getAuthHeaders(true) });
+                    if (!res.ok) throw new Error("Could not fetch offer details");
+                    const offerData = await res.json();
 
-                    if (openPosts.length === 0) {
-                        selectEl.innerHTML = `<option value="" disabled selected>No open listings available</option>`;
-                        return;
+                    // 1. Lock and fill the dropdown menu using the database data
+                    const selectEl = document.getElementById("offeredPostSelect");
+                    if (selectEl) {
+                        // Assuming your enriched offer returns the post title inside an 'post' object
+                        const lockedTitle = offerData.post
+                            ? offerData.post.title
+                            : "Message / Custom Offer";
+                        selectEl.innerHTML = `<option value="" selected>${lockedTitle} (Locked)</option>`;
+                        selectEl.disabled = true;
                     }
-                    
-                    selectEl.innerHTML = `<option value="" selected>Choose your listing...</option>`;
-                    openPosts.forEach(post => {
-                        selectEl.insertAdjacentHTML("beforeend", `<option value="${post.post_id}">${post.title}</option>`);
-                    });
+
+                    // 2. Un-hide the message box and inject the database data
+                    const prevContainer = document.getElementById("previousOfferContainer");
+                    const prevText = document.getElementById("previousOfferText");
+                    if (prevContainer && prevText) {
+                        prevText.innerText = offerData.offered_item_details;
+                        prevContainer.classList.remove("d-none"); 
+                    }
                 } catch (e) {
                     selectEl.innerHTML = `<option value="" disabled selected>Error loading listings</option>`;
                 }
