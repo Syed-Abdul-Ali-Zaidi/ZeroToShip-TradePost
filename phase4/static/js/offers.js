@@ -17,6 +17,10 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
+    function avatar(name) {
+    return `<span class="trade-card__avatar">${(name || "?").charAt(0).toUpperCase()}</span>`;
+    }
+
     // Helper to safely extract the relevant ID from the URL path
     function getPathId() {
         const parts = pathname.split("/").filter(Boolean);
@@ -45,7 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         <h3 class="fw-bold mb-2">${post.title}</h3>
                         <span class="badge ${post.status === "Open" ? "bg-success" : "bg-secondary"}">${post.status}</span>
                     </div>
-                    <p class="text-muted">Listed by: ${post.owner_username}</p>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        ${avatar(post.owner_username)}
+                        <span class="text-muted">Listed by ${post.owner_username}</span>
+                    </div>
                     ${post.image_url ? `<img src="${post.image_url}" class="img-fluid rounded mb-3" style="max-height: 300px;">` : ""}
                     <p class="mb-0">${post.description}</p>
                 `;
@@ -75,8 +82,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (offers.length === 0) {
                     offersContainer.innerHTML = isOwner
-                        ? `<p class="text-muted">No offers received yet.</p>`
-                        : `<p class="text-muted">You haven't made an offer on this listing.</p>`;
+                        ? `<div class="feed-state"><i class="bi bi-inbox"></i>No offers received yet.</div>`
+                        : `<div class="feed-state"><i class="bi bi-inbox"></i>You haven't made an offer on this listing.</div>`;
 
                     return;
                 }
@@ -89,25 +96,33 @@ document.addEventListener("DOMContentLoaded", () => {
                         ? `<a href="/posts/${offer.offered_post_id}" class="btn btn-sm btn-outline-info">View Offered Item</a>`
                         : "";
                     
-                    // Added Counter Offer button pointing to /offers/edit_offer/{offer_id}
-                    const actions = offer.status === "Pending" && myTurn
-                        ? `<a href="/offers/${offer.offer_id}/accept" class="btn btn-sm btn-success">Accept Trade</a>
-                           <a href="/offers/edit_offer/${offer.offer_id}" class="btn btn-sm btn-outline-primary">Counter Offer</a>
-                           <a href="/offers/delete_offer/${offer.offer_id}" class="btn btn-sm btn-outline-danger">Decline</a>`
-                        : "";
+                    // Handle actions based on whose turn it is
+                    let actions = "";
+                    if (offer.status === "Pending") {
+                        if (myTurn) {
+                            // It is your turn to respond
+                            actions = `<a href="/offers/${offer.offer_id}/accept" class="btn btn-sm btn-success">Accept Trade</a>
+                                       <a href="/offers/edit_offer/${offer.offer_id}" class="btn btn-sm btn-outline-primary">Counter Offer</a>
+                                       <a href="/offers/delete_offer/${offer.offer_id}" class="btn btn-sm btn-outline-danger">Decline</a>`;
+                        } else {
+                            // You are waiting for the other party, so you can withdraw
+                            actions = `<a href="/offers/delete_offer/${offer.offer_id}" class="btn btn-sm btn-outline-danger">Withdraw</a>`;
+                        }
+                    }
 
                     offersContainer.insertAdjacentHTML("beforeend", `
-                        <div class="card shadow-sm mb-3 border-start border-4 border-primary">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="mb-0 fw-bold">Offer from: ${offer.proposer_username}</h6>
-                                    ${badge}
+                        <div class="offer-card">
+                            <div class="offer-card__head">
+                                <div class="offer-card__who">
+                                    ${avatar(offer.proposer_username)}
+                                    <span class="offer-card__name">${offer.proposer_username}</span>
                                 </div>
-                                <p class="mb-3">${offer.offered_item_details}</p>
-                                <div class="d-flex justify-content-end gap-2">
-                                    ${viewPostBtn}
-                                    ${actions}
-                                </div>
+                                ${badge}
+                            </div>
+                            <p class="offer-card__details">${offer.offered_item_details}</p>
+                            <div class="offer-card__actions">
+                                ${viewPostBtn}
+                                ${actions}
                             </div>
                         </div>
                     `);
@@ -132,6 +147,8 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("targetPostId").value = postId;
         }
 
+        const selectEl = document.getElementById("offeredPostSelect");
+
         if (isEditMode) {
             const heading = document.querySelector(".auth-card h2") || document.querySelector("h2.page-heading");
             if (heading) heading.innerText = "Submit Counter Offer";
@@ -152,7 +169,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     const offerData = await res.json();
 
                     // 1. Lock and fill the dropdown menu using the database data
-                    const selectEl = document.getElementById("offeredPostSelect");
                     if (selectEl) {
                         // Assuming your enriched offer returns the post title inside an 'post' object
                         const lockedTitle = offerData.post
@@ -169,6 +185,26 @@ document.addEventListener("DOMContentLoaded", () => {
                         prevText.innerText = offerData.offered_item_details;
                         prevContainer.classList.remove("d-none"); 
                     }
+                } catch (e) {
+                    selectEl.innerHTML = `<option value="" disabled selected>Error loading listings</option>`;
+                }
+            })();
+        } else if (selectEl && !isEditMode) {
+            (async function populateListings() {
+                try {
+                    const res = await fetch("/api/posts/", { headers: getAuthHeaders(true) });
+                    const posts = await res.json();
+                    const openPosts = posts.filter(p => p.owner_id == myUserId && p.status === "Open");
+
+                    if (openPosts.length === 0) {
+                        selectEl.innerHTML = `<option value="" disabled selected>No open listings available</option>`;
+                        return;
+                    }
+                    
+                    selectEl.innerHTML = `<option value="" selected>No Listing Selected</option>`;
+                    openPosts.forEach(post => {
+                        selectEl.insertAdjacentHTML("beforeend", `<option value="${post.post_id}">${post.title}</option>`);
+                    });
                 } catch (e) {
                     selectEl.innerHTML = `<option value="" disabled selected>Error loading listings</option>`;
                 }
@@ -227,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const offers = await res.json();
 
                 if (offers.length === 0) {
-                    myOffersGrid.innerHTML = `<p class="text-center text-muted">You haven't made any offers yet.</p>`;
+                    myOffersGrid.innerHTML = `<div class="feed-state"><i class="bi bi-arrow-left-right"></i>You haven't made any offers yet.</div>`;
                     return;
                 }
 
@@ -237,22 +273,23 @@ document.addEventListener("DOMContentLoaded", () => {
                     const title = offer.post ? offer.post.title : `Post #${offer.post_id}`;
                     
                     myOffersGrid.insertAdjacentHTML("beforeend", `
-                        <div class="card shadow-sm mb-4">
-                             <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                 <small class="text-muted">Target: <strong>${title}</strong></small>
-                                 ${badge}
-                             </div>
-                             <div class="card-body">
-                                 <p><strong>Your Proposal:</strong> ${offer.offered_item_details}</p>
-                             </div>
-                             <div class="card-footer d-flex justify-content-end bg-white">
-                                 ${offer.status === "Pending" ? `<a href="/offers/delete_offer/${offer.offer_id}" class="btn btn-sm btn-outline-danger">Withdraw</a>` : ""}
-                             </div>
-                         </div>
+                        <div class="offer-summary-card">
+                            <div class="offer-summary-card__head">
+                                <span class="offer-summary-card__target">Target: <strong>${title}</strong></span>
+                                ${badge}
+                            </div>
+                            <div class="offer-summary-card__body">
+                                <p><strong>Your Proposal:</strong> ${offer.offered_item_details}</p>
+                            </div>
+                            <div class="offer-summary-card__footer d-flex justify-content-end gap-2">
+                                <a href="/posts/${offer.post_id}" class="btn btn-sm btn-outline-primary">View Trade</a>
+                                ${offer.status === "Pending" ? `<a href="/offers/delete_offer/${offer.offer_id}" class="btn btn-sm btn-outline-danger">Withdraw</a>` : ""}
+                            </div>
+                        </div>
                     `);
                 });
             } catch (e) {
-                myOffersGrid.innerHTML = `<p class="text-danger">Failed to load offers.</p>`;
+                myOffersGrid.innerHTML = `<div class="feed-state is-error"><i class="bi bi-exclamation-circle"></i>Failed to load offers.</div>`;
             }
         })();
     }

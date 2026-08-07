@@ -1,16 +1,23 @@
 /* =========================================================
    TradePost theme
-   Green accent, Black (dark mode) / White (light mode) base
+   Sage green accent, Black (dark mode) / White (light mode) base
+   Display type: Space Grotesk / Body type: Inter
    ========================================================= */
 
 :root {
     --brand-green: #5c8368;
     --brand-green-dark: #48684f;
     --brand-green-soft: rgba(92, 131, 104, 0.14);
-    --radius-lg: 14px;
+    --brand-amber: #c99a3e;      /* "your turn" / pending accent, replaces stock bs-warning */
+    --brand-amber-soft: rgba(201, 154, 62, 0.16);
+    --brand-rust: #b5563c;       /* decline / delete accent, replaces stock bs-danger tone */
+    --brand-rust-soft: rgba(181, 86, 60, 0.14);
+    --radius-lg: 16px;
     --radius-md: 10px;
-    --radius-sm: 6px;
+    --radius-sm: 8px;
     --page-max-width: 1200px;
+    --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+    --font-body: "Inter", system-ui, -apple-system, sans-serif;
 }
 
 /* ---------- Dark mode (Black) ---------- */
@@ -37,10 +44,24 @@
     --input-border: #dadcd7;
 }
 
+* {
+    scrollbar-width: thin;
+}
+
 body {
     background-color: var(--bg-app);
     color: var(--text-main);
+    font-family: var(--font-body);
     transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1, h2, h3, h4, h5, h6,
+.navbar-brand,
+.page-heading,
+.card h6.fw-bold,
+#post-details-container h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
 }
 
 .container {
@@ -62,16 +83,50 @@ a:hover {
     text-decoration: underline;
 }
 
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
 /* ---------- Navbar ---------- */
 .navbar {
     background-color: var(--bg-card) !important;
     border-bottom: 1px solid var(--border-soft);
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
 }
 .navbar-brand {
     font-weight: 700;
+    font-size: 1.25rem;
     color: var(--brand-green) !important;
-    letter-spacing: 0.3px;
+    letter-spacing: -0.01em;
 }
+.brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background-color: var(--brand-green-soft);
+    color: var(--brand-green);
+    font-size: 0.95rem;
+}
+
+/* Everything except the brand collapses into this right-aligned cluster */
+.navbar-collapse {
+    gap: 0.5rem;
+}
+.navbar-actions {
+    flex-wrap: nowrap;
+}
+.navbar-actions .theme-toggle-btn {
+    flex-shrink: 0;
+}
+
 .nav-link.active {
     color: var(--brand-green) !important;
     font-weight: 600;
@@ -90,14 +145,48 @@ a:hover {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-right: 0.5rem;
+    padding: 0;
+    transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 .theme-toggle-btn:hover {
     border-color: var(--brand-green);
     color: var(--brand-green);
+    transform: rotate(-8deg);
+}
+
+@media (max-width: 991.98px) {
+    .navbar-collapse {
+        justify-content: flex-start !important;
+        margin-top: 0.75rem;
+        border-top: 1px solid var(--border-soft);
+        padding-top: 0.75rem;
+    }
+    .navbar-actions {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 0.75rem;
+    }
+    #statusFilter {
+        max-width: 100% !important;
+    }
+    #auth-nav {
+        width: 100%;
+    }
+    #auth-nav .btn {
+        flex: 1;
+    }
+    .navbar-actions .theme-toggle-btn {
+        align-self: flex-start;
+    }
 }
 
 /* ---------- Buttons ---------- */
+.btn {
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    letter-spacing: 0.01em;
+}
 .btn-primary {
     background-color: var(--brand-green);
     border-color: var(--brand-green);
@@ -117,23 +206,342 @@ a:hover {
     border-color: var(--brand-green);
     color: #fff;
 }
+.btn-success {
+    background-color: var(--brand-green);
+    border-color: var(--brand-green);
+}
+.btn-success:hover {
+    background-color: var(--brand-green-dark);
+    border-color: var(--brand-green-dark);
+}
+.btn-danger,
+.btn-outline-danger {
+    --bs-btn-color: var(--brand-rust);
+    --bs-btn-border-color: var(--brand-rust);
+    --bs-btn-hover-bg: var(--brand-rust);
+    --bs-btn-hover-border-color: var(--brand-rust);
+    --bs-btn-bg: transparent;
+}
+.btn-danger {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--brand-rust);
+}
+.btn-outline-secondary {
+    color: var(--text-muted);
+    border-color: var(--input-border);
+}
+.btn-outline-secondary:hover {
+    background-color: var(--bg-elevated);
+    border-color: var(--text-muted);
+    color: var(--text-main);
+}
+.btn-outline-info {
+    color: #4c7c8c;
+    border-color: #4c7c8c;
+}
+.btn-outline-info:hover {
+    background-color: #4c7c8c;
+    border-color: #4c7c8c;
+    color: #fff;
+}
+.btn-link {
+    color: var(--brand-green);
+}
 
-/* ---------- Cards (marketplace / listings) ---------- */
-.feed-card {
+/* Focus states, kept visible for keyboard users */
+.btn:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--brand-green);
+    outline-offset: 2px;
+}
+
+/* ---------- Badges (status + turn indicators) ---------- */
+.badge {
+    font-family: var(--font-body);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 0.4em 0.7em;
+    border-radius: 999px;
+}
+.badge.bg-success {
+    background-color: var(--brand-green-soft) !important;
+    color: var(--brand-green-dark) !important;
+    border: 1px solid var(--brand-green);
+}
+[data-bs-theme="dark"] .badge.bg-success {
+    color: #8fb69b !important;
+}
+.badge.bg-secondary {
+    background-color: var(--bg-elevated) !important;
+    color: var(--text-muted) !important;
+    border: 1px solid var(--border-soft);
+}
+.badge.bg-warning {
+    background-color: var(--brand-amber-soft) !important;
+    color: var(--brand-amber) !important;
+    border: 1px solid var(--brand-amber);
+}
+.badge.bg-warning.text-dark {
+    color: var(--brand-amber) !important;
+}
+
+/* ---------- Page header ---------- */
+.page-header {
+    margin-bottom: 1.75rem;
+}
+.page-header .page-heading {
+    font-size: 1.65rem;
+    margin-bottom: 0.2rem;
+}
+.page-header .page-subtext {
+    font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
+/* ---------- Responsive card grid ---------- */
+.grid-feed {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+.grid-feed > p,
+.grid-feed > .feed-state {
+    grid-column: 1 / -1;
+}
+
+/* Empty / loading / error states inside a grid feed */
+.feed-state {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 3rem 1.5rem;
+    border: 1px dashed var(--border-soft);
+    border-radius: var(--radius-lg);
+    background-color: var(--bg-card);
+}
+.feed-state i {
+    font-size: 1.75rem;
+    color: var(--brand-green);
+    display: block;
+    margin-bottom: 0.6rem;
+}
+.feed-state.is-error i {
+    color: var(--brand-rust);
+}
+
+/* ---------- Trade card (marketplace / my listings) ---------- */
+.trade-card {
+    display: flex;
+    flex-direction: column;
     background-color: var(--bg-card);
     border: 1px solid var(--border-soft);
     border-radius: var(--radius-lg);
     overflow: hidden;
+    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.trade-card:hover {
+    border-color: var(--brand-green);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px -14px rgba(0, 0, 0, 0.3);
+}
+.trade-card__media {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    background-color: var(--bg-elevated);
+    overflow: hidden;
+}
+.trade-card__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.trade-card__media-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 2rem;
+}
+.trade-card__status {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    padding: 0.3em 0.75em;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    backdrop-filter: blur(4px);
+}
+.trade-card__status.is-open {
+    background-color: rgba(92, 131, 104, 0.85);
+    color: #fff;
+}
+.trade-card__status.is-traded {
+    background-color: rgba(43, 46, 44, 0.75);
+    color: #fff;
+}
+.trade-card__body {
+    padding: 1rem 1.15rem 0.25rem;
+    flex-grow: 1;
+}
+.trade-card__owner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+}
+.trade-card__avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: var(--brand-green);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.trade-card__owner-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.trade-card__title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    color: var(--text-main);
+}
+.trade-card__desc {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+.trade-card__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.9rem 1.15rem;
+    margin-top: 0.75rem;
+    border-top: 1px solid var(--border-soft);
+}
+
+/* ---------- Offer cards (post detail inbound offers + my offers dashboard) ---------- */
+.offer-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-left: 3px solid var(--brand-green);
+    border-radius: var(--radius-md);
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+.offer-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.65rem;
+}
+.offer-card__who {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+.offer-card__who .trade-card__avatar {
+    width: 32px;
+    height: 32px;
+}
+.offer-card__name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--text-main);
+}
+.offer-card__details {
+    color: var(--text-main);
+    margin-bottom: 0.85rem;
+}
+.offer-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* My offers dashboard summary cards */
+.offer-summary-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+}
+.offer-summary-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem 1.15rem;
+    background-color: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-soft);
+}
+.offer-summary-card__target {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+.offer-summary-card__target strong {
+    color: var(--text-main);
+}
+.offer-summary-card__body {
+    padding: 1rem 1.15rem;
+}
+.offer-summary-card__body p {
+    margin-bottom: 0;
+}
+.offer-summary-card__footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.75rem 1.15rem;
+    border-top: 1px solid var(--border-soft);
+}
+
+/* ---------- Cards (marketplace / listings) ---------- */
+.card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    color: var(--text-main);
+}
+.feed-card {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.feed-card:hover {
+    border-color: var(--brand-green);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.25);
 }
 .feed-card .card-body {
     background-color: transparent;
 }
-.feed-card img {
+.feed-card img,
+.card-img-top {
     width: 100%;
     max-height: 420px;
     object-fit: cover;
-    border-top: 1px solid var(--border-soft);
-    border-bottom: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
 }
 
 .card-text {
@@ -142,6 +550,43 @@ a:hover {
 h6.mb-0 {
     color: var(--text-main);
     font-weight: 600;
+}
+
+/* Offer / listing cards injected by JS use bg-light + bg-white headers/footers,
+   which are light-mode-only Bootstrap tokens — remap them to theme tokens so
+   dark mode stays legible. */
+.card-header,
+.card-header.bg-light {
+    background-color: var(--bg-elevated) !important;
+    border-bottom: 1px solid var(--border-soft);
+    color: var(--text-main);
+}
+.card-footer,
+.card-footer.bg-white {
+    background-color: var(--bg-card) !important;
+    border-top: 1px solid var(--border-soft);
+}
+.border-primary {
+    border-color: var(--brand-green) !important;
+}
+.text-dark {
+    color: var(--text-main) !important;
+}
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* Owner avatar initial circle on listing cards */
+.feed-card .rounded-circle.bg-success {
+    background-color: var(--brand-green) !important;
+}
+
+/* ---------- Alerts (previous-offer callout) ---------- */
+.alert-secondary {
+    background-color: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    color: var(--text-main);
 }
 
 /* ---------- Forms ---------- */
@@ -158,7 +603,8 @@ form p {
     margin-bottom: 1rem;
 }
 
-form label {
+form label,
+.form-label {
     display: block;
     margin-bottom: 0.35rem;
     font-weight: 600;
@@ -197,6 +643,7 @@ form textarea {
     background-color: var(--input-bg);
     border: 1px solid var(--input-border);
     color: var(--text-main);
+    border-radius: var(--radius-sm);
 }
 .form-control::placeholder {
     color: var(--text-muted);
@@ -220,6 +667,7 @@ form textarea {
 .confirm-card {
     width: 100%;
     max-width: 560px;
+    border-radius: var(--radius-lg);
 }
 .confirm-card {
     background-color: var(--bg-card);
@@ -229,10 +677,35 @@ form textarea {
     text-align: center;
 }
 
+/* Confirm-page icons sit in a soft tinted circle instead of bare glyphs */
+.confirm-icon-wrap {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+}
+.confirm-icon-wrap.is-success { background-color: var(--brand-green-soft); color: var(--brand-green); }
+.confirm-icon-wrap.is-info { background-color: var(--brand-green-soft); color: var(--brand-green); }
+.confirm-icon-wrap.is-danger { background-color: var(--brand-rust-soft); color: var(--brand-rust); }
+
 .page-heading {
     color: var(--text-main);
     font-weight: 700;
 }
 .page-subtext {
     color: var(--text-muted);
+}
+
+/* ---------- Loading state ---------- */
+.spinner-border {
+    color: var(--brand-green);
+}
+
+/* ---------- Shadows: soften Bootstrap's default shadow tokens to fit dark mode ---------- */
+.shadow, .shadow-sm {
+    box-shadow: 0 4px 16px -8px rgba(0, 0, 0, 0.35) !important;
 }

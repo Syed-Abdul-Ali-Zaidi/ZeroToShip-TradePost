@@ -81,7 +81,12 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderPosts(container, posts, emptyMessage) {
         container.innerHTML = "";
         if (posts.length === 0) {
-            container.innerHTML = `<p class="text-center text-muted mt-4">${emptyMessage}</p>`;
+            container.innerHTML = `
+                <div class="feed-state">
+                    <i class="bi bi-inboxes"></i>
+                    ${emptyMessage}
+                </div>
+            `;
             return;
         }
         posts.forEach(post => container.insertAdjacentHTML("beforeend", buildPostCard(post)));
@@ -103,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const posts = await res.json();
                 renderPosts(marketGrid, posts, "No items listed yet.");
             } catch (e) {
-                marketGrid.innerHTML = `<p class="text-danger text-center">Failed to load marketplace.</p>`;
+                marketGrid.innerHTML = `<div class="feed-state is-error"><i class="bi bi-exclamation-circle"></i>Failed to load marketplace.</div>`;
             }
         }
         if (myPostsGrid) {
@@ -112,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const posts = await res.json();
                 renderPosts(myPostsGrid, posts, "You haven't listed anything yet.");
             } catch (e) {
-                myPostsGrid.innerHTML = `<p class="text-danger text-center">Failed to load your listings.</p>`;
+                myPostsGrid.innerHTML = `<div class="feed-state is-error"><i class="bi bi-exclamation-circle"></i>Failed to load your listings.</div>`;
             }
         }
     }
