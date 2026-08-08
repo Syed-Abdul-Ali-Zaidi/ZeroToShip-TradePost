@@ -97,7 +97,7 @@ def accept_offer(offer_id: int, current_user: dict = Depends(get_current_user)):
 
     # Accept and process targeted OFFERED_POST and its offers
     offered_post_id = offer.get("offered_post_id", 0) 
-    if offered_post_id > 0:
+    if offered_post_id is not None and offered_post_id > 0:
         success_offer = db.process_offer_acceptance(0, offered_post_id)
         if not success_offer:
             raise HTTPException(
