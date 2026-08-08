@@ -62,8 +62,8 @@ Each `phaseN/README.md` documents what that phase covers on its own; `final_inte
 
 ### 2. Clone and enter the project
 ```bash
-git clone <your-repo-url>
-cd <repo-folder>
+git clone https://github.com/Syed-Abdul-Ali-Zaidi/ZeroToShip-TradePost
+cd ZeroToShip-TradePost
 ```
 
 ### 3. Create and activate a virtual environment (recommended)
