@@ -7,6 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (loginForm) {
         loginForm.addEventListener("submit", async (e) => {
             e.preventDefault();
+
+            // Clear any previous messages
+            if (loginMessage) loginMessage.innerHTML = "";
             
             const payload = {
                 username: document.getElementById("username").value,
@@ -24,9 +27,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const data = await response.json();
                 saveToken(data.access_token);
-                window.location.href = "/posts/";
+
+                // Show success message temporarily before redirecting
+                if (loginMessage) {
+                    loginMessage.innerHTML = `<div class="text-success mt-3 mb-0 p-2 text-center">Login successful!</div>`
+                }
+                setTimeout(() => {
+                    window.location.href = "/posts/";
+                }, 1500);
+
             } catch (error) {
-                alert("Login failed. Please check your username and password.");
+                if (loginMessage) {
+                    loginMessage.innerHTML = `<div class="text-danger mt-3 mb-0 p-2 text-center">Login failed. Please check your username and password.</div>`;
+                }
                 console.error(error);
             }
         });
@@ -39,6 +52,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (registerForm) {
         registerForm.addEventListener("submit", async (e) => {
             e.preventDefault();
+
+            // Clear any previous messages
+            if (registerMessage) registerMessage.innerHTML = "";
 
             const payload = {
                 username: document.getElementById("regUsername").value,
@@ -53,11 +69,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 if (!response.ok) throw new Error("Registration failed");
-
-                alert("Registration successful! Please login.");
-                window.location.href = "/accounts/login";
+                
+                if (registerMessage) {
+                    registerMessage.innerHTML = `<div class="text-success mt-3 mb-0 p-2 text-center">Registration successful! Redirecting to login...</div>`;
+                }
+                setTimeout(() => {
+                    window.location.href = "/accounts/login";
+                }, 1500);
             } catch (error) {
-                alert("Could not register. Username might be taken.");
+                if (registerMessage) {
+                    registerMessage.innerHTML = `<div class="text-danger mt-3 mb-0 p-2 text-center">Could not register. Username might be taken.</div>`;
+                }
                 console.error(error);
             }
         });
