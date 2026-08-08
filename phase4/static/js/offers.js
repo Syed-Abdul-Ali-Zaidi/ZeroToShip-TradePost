@@ -168,6 +168,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (!res.ok) throw new Error("Could not fetch offer details");
                     const offerData = await res.json();
 
+                    const targetInput = document.getElementById("targetPostId");
+                    if (targetInput && offerData.post_id) {
+                        targetInput.value = offerData.post_id;
+                    }
+
                     // 1. Lock and fill the dropdown menu using the database data
                     if (selectEl) {
                         // Assuming your enriched offer returns the post title inside an 'post' object
@@ -214,6 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
         offerCreateForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const notes = document.getElementById("offerMessage").value;
+            const postIdVal = parseInt(document.getElementById("targetPostId").value, 10);
 
             if (isEditMode) {
                 try {
@@ -223,12 +229,11 @@ document.addEventListener("DOMContentLoaded", () => {
                         body: JSON.stringify({ offered_item_details: notes })
                     });
                     if (!res.ok) throw new Error("Failed to send counter offer");
-                    window.location.href = "/offers/my_offers";
+                    window.location.href = `/posts/${postIdVal}`;
                 } catch (e) {
                     alert("Failed to send counter offer.");
                 }
             } else {
-                const postIdVal = parseInt(document.getElementById("targetPostId").value, 10);
                 if (!postIdVal) return alert("Missing target post.");
 
                 const payload = {
@@ -244,7 +249,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         body: JSON.stringify(payload)
                     });
                     if (!res.ok) throw new Error("Failed to send offer");
-                    window.location.href = "/offers/my_offers";
+                    window.location.href = `/posts/${postIdVal}`;
                 } catch (e) {
                     alert("Failed to send offer.");
                 }
@@ -302,9 +307,15 @@ document.addEventListener("DOMContentLoaded", () => {
         acceptBtn.addEventListener("click", async () => {
             const offerId = getPathId();
             try {
+                // Fetch the offer to get the associated post_id before accepting
+                const offerRes = await fetch(`/api/offers/${offerId}`, { headers: getAuthHeaders(true) });
+                if (!offerRes.ok) throw new Error("Could not fetch offer details");
+                const offerData = await offerRes.json();
+                const targetPostId = offerData.post_id;
+
                 const res = await fetch(`/api/offers/${offerId}/accept`, { method: "POST", headers: getAuthHeaders(true) });
                 if (!res.ok) throw new Error();
-                window.location.href = "/posts/my_posts";
+                window.location.href = `/posts/${targetPostId}`;
             } catch (e) { alert("Could not accept trade."); }
         });
     }
@@ -314,9 +325,16 @@ document.addEventListener("DOMContentLoaded", () => {
         deleteOfferBtn.addEventListener("click", async () => {
             const offerId = getPathId();
             try {
+                // Fetch the offer to get the associated post_id before accepting
+                const offerRes = await fetch(`/api/offers/${offerId}`, { headers: getAuthHeaders(true) });
+                if (!offerRes.ok) throw new Error("Could not fetch offer details");
+                const offerData = await offerRes.json();
+                const targetPostId = offerData.post_id;
+
                 const res = await fetch(`/api/offers/delete_offer/${offerId}`, { method: "DELETE", headers: getAuthHeaders(true) });
                 if (!res.ok) throw new Error();
-                window.location.href = "/offers/my_offers";
+
+                window.location.href = `/posts/${targetPostId}`;
             } catch (e) { alert("Could not withdraw offer."); }
         });
     }
