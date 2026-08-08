@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 setTimeout(() => {
                     window.location.href = "/posts/";
-                }, 1500);
+                }, 500);
 
             } catch (error) {
                 if (loginMessage) {
