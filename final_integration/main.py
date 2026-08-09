@@ -25,19 +25,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# JSON API routes -> /api/posts, /api/offers, /auth/...
 app.include_router(auth_router)
 app.include_router(posts_router)
 app.include_router(offers_router)
 
-# HTML page routes -> /, /posts/, /offers/..., /accounts/...
-# NOTE: moved the old JSON "root" health check to /api/health below,
-# so this router can own "/" for the actual homepage.
 app.include_router(views_router)
 
-# Serve everything under phase4/static/ at /static/...
-# Built from this file's own location so it works no matter which
-# folder you happen to launch `main.py` from.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "phase4" / "static"), name="static")
